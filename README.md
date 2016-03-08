@@ -23,9 +23,10 @@ Features
 - Support for UltraStar TXT files
 - Lyrics sync
 - Microphone input
-- Pitch recognigment
+- Pitch recognition
 - **Songs search!**
 - **Songs download!**
+- Video transcoding 
 
 Getting started
 ---------------
