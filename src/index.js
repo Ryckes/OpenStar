@@ -34,7 +34,11 @@ var downloadEvent;
 
 var Transcoder = require('stream-transcoder');
 
-console.log(process.env.FFMPEG_BIN_PATH);
+var YouTube = require('youtube-node');
+var youTube = new YouTube();
+youTube.setKey('AIzaSyDmKpkzfIJCIn368MkAKN-zHyhXtRYTsRU');
+
+
 let loginUltrastar=function(){
 	request.post({url:"http://ultrastar-es.org/foro/ucp.php?mode=login", jar: j, form: {username:'openstar', password:'openstarAPI', login:''}}, function (error, response, body) {
         if (!error && response.statusCode == 200) {
@@ -82,39 +86,67 @@ var transcode=function(name, path){
 	    	console.log(e);
 	    }).writeToFile(path+".mp4");
 }
+var addYoutubeId=function(path, name, id){
+	fs.appendFile(__dirname+"/songs/"+path, "\n#YOUTUBE:"+id, function(err) {
+    if(err) {
+        return console.log(err);
+    }
 
+    downloadEvent.sender.send("downloadFinished", name);
+}); 
+}
 var downloadTorrentFinished=function(buff){
 	client.add(buff, {path: __dirname+"/songs/", }, function (torrent) {
+		torrent._selections = [];
+		console.log(torrent._selections);
+		torrent.files.forEach(function (file) {
+			if(file.name.indexOf(".txt")!=-1 || file.name.indexOf(".jpg")!=-1){
+				file.select();
+
+			}
+			 // file.deselect();
+
+	  })
+	  
 	  // Got torrent metadata!
 	  console.log('Client is downloading:', torrent.infoHash)
 	  torrent.on('download', function(chunkSize){
-	  	  downloadEvent.sender.send("downloadProgress", 0.90*torrent.progress);
+	  	  downloadEvent.sender.send("downloadProgress", torrent.progress);
 	})
 	torrent.on('done', function(){
 	  console.log('torrent finished downloading');
 	  var trans=false;
 	  var f = undefined;
 	  torrent.files.forEach(function(file){
-	     if(file.name.indexOf(".avi")!=-1){
 		     console.log(__dirname+"/songs/"+file.path);
+		     if(file.name.indexOf(".txt")!=-1){
+			     var name = file.name.slice(0, -4);
+			     youTube.search(name, 1, function(error, result) {
+				  if (error) {
+				    console.log(error);
+				  }
+				  else {
+					  var id = result.items[0].id.videoId;
+					  addYoutubeId(file.path, name, id);
+					  
+				  }
+				});
+
+		     
 		     //Transcoding needed
-		     trans=true;
-		     transcode(file.name.replace(".avi", ""), __dirname+"/songs/"+file.path);	
+		   //  trans=true;
+		   //  transcode(file.name.replace(".avi", ""), __dirname+"/songs/"+file.path);	
 
 	     }
 	  })
 	  	 if(trans==false){
 		  	 	var name = torrent.files[0].name.slice(0, -4);
 		  	 	console.log(name);
-		  	    downloadEvent.sender.send("downloadFinished", name);
 	  	 }
 	  	 console.log(trans);
 	})
 
-	  torrent.files.forEach(function (file) {
-	    // Display the file by appending it to the DOM. Supports video, audio, images, and
-	    // more. Specify a container element (CSS selector or reference to DOM node).
-	  })
+	
 	})
 
 
@@ -206,7 +238,7 @@ let createWindow = () => {
   mainWindow.loadURL(path.join('file://', __dirname, '/index.html'))
 
   // Open the DevTools.
- // mainWindow.webContents.openDevTools()
+  mainWindow.webContents.openDevTools()
 
   // Emitted when the window is closed.
   mainWindow.on('closed', () => {

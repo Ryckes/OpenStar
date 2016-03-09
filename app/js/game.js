@@ -9,6 +9,7 @@ var Game = {
 	lyricsPath: "songs",
 	lyrics: undefined,
 	beat: undefined,
+	playing:false,
 	delta: 0,
 	refreshRate: 50,
 	lyricsIndex: 0,
@@ -164,7 +165,7 @@ var Game = {
 		}
 	},
 	progress: function progress() {
-		this.seconds = this.videoElement.currentTime;
+		//this.seconds = this.videoElement.currentTime;
 		if (this.lyrics["videogap"] == undefined) {
 			this.lyrics["videogap"] = 0;
 		}
@@ -173,6 +174,7 @@ var Game = {
 			this.setLyrics();
 			this.printPitch();
 		}
+		this.delta = this.lyrics["bpm"] * 4 / 60;
 		var _this = this;
 		this.videoElement.addEventListener('loadeddata', function () {
 			if (_this.videoElement.paused && _this.lyrics != undefined) {
@@ -194,6 +196,12 @@ var Game = {
 		this.videoElement = $('#video').get(0);
 		this.audioElement = $('#audio').get(0);
 		$(document).keydown(function (e) {
+			if (e.which == 38) {
+				Game.lyrics["videogap"]-=0.50;	
+			}
+			if (e.which == 40) {
+				Game.lyrics["videogap"]+=0.50;	
+			}			
 			if (e.which == 27) {
 
 				document.location.href = 'index.html';
@@ -201,13 +209,62 @@ var Game = {
 		});
 		this.postSetup();
 	},
+	getMessage:function(evt){
+		if(evt.data=="playing"){
+			
+			var start = new Date().getTime(),
+    elapsed = '0.0';
+
+			window.setInterval(function()
+			{
+			    var time = new Date().getTime() - start;
+			
+			    elapsed = Math.floor(time / 100) / 10;
+			    if(Math.round(elapsed) == elapsed) { elapsed += '.0'; }
+			
+			   Game.seconds = elapsed;
+			   Game.progress();
+			}, 100);
+
+/*
+			setInterval(function () {
+				Game.seconds+=Game.refreshRate/1000;
+				Game.progress();
+			}, this.refreshRate);
+			*/
+		
+		}else{
+			Game.seconds = evt.data;
+		}
+	},
 	postSetup: function postSetup() {
-		var vid = this.lyrics["video"].replace(".avi", ".avi.mp4");
-		this.videoElement.src = this.lyricsPath + "/" + this.lyrics["name"] + "/" + vid;
+		//var vid = this.lyrics["video"].replace(".avi", ".avi.mp4");
+		//this.videoElement.src = this.lyricsPath + "/" + this.lyrics["name"] + "/" + vid;
+		//this.callPlayer("playVideo");
+		var _this= this;
+		$("iframe").attr("src", "http://fiddle.jshell.net/jyL58uoL/28/show/light/#"+this.lyrics["youtube"]);
+		$('iframe').load(function(){
+		 window.addEventListener("message", _this.getMessage, false);
+		 document.getElementsByTagName('iframe')[0].contentWindow.postMessage("handshake", "http://fiddle.jshell.net");
+
+		});
+	     /*
+	     player = new YT.Player('player', {
+	          height: '390',
+	          width: '640',
+	          videoId: this.lyrics["youtube"],
+	          events: {
+	            'onReady': onPlayerReady,
+	            'onStateChange': onPlayerStateChange
+	          }
+	        });
+	        */
+      
+ 
+
+
 		this.audioElement.src = this.lyricsPath + "/" + this.lyrics["name"] + "/" + this.lyrics["mp3"];
-		setInterval(function () {
-			Game.progress();
-		}, this.refreshRate);
+		
 	},
 	loadLyrics: function loadLyrics() {
 		$.get(this.lyricsPath + "/" + this.title + "/" + this.title + ".txt", function (data) {

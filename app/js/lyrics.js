@@ -1,7 +1,7 @@
 var Lyrics = {
 		
 	parse:function(rawData){
-		var attributes={"title":"str", "artist":"str", "language":"str", "genre":"str", "videogap":"float", "bpm":"int", "gap":"int", "medleystartbeat":"int", "medleyendbeat":"int", "cover":"str", "video":"str", "mp3":"str"};
+		var attributes={"title":"str", "artist":"str", "language":"str", "genre":"str", "videogap":"float", "bpm":"int", "gap":"int", "medleystartbeat":"int", "medleyendbeat":"int", "cover":"str", "video":"str", "mp3":"str", "youtube":"str"};
 		var types={":":"regular", "*":"golden", "F":"freestyle", "-":"break"};
 		var finalStruc= {"lyrics":[]};
 		var l = rawData.split("\n");
