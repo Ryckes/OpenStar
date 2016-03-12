@@ -5,8 +5,8 @@ var NavBar = React.createClass({
 	<div className='navbar navbar-default navbar-fixed-top'>
 		<div className='container'>
 			<div className='navbar-header'>
-				<a href='#' className='navbar-brand'>OpenStar</a>
-				<div className='navbar-brand navbar-brand-centered'>
+				<a href='#' className='navbar-brand'>OpenStar<span id="loading-placeholder"></span></a>
+			    <div className='navbar-brand navbar-brand-centered'>
 					<span id='lookup_string'>Todas mis canciones</span>
 					<form id='search_form' className='navbar-form' role='search'>
 						<div className='input'>
@@ -189,89 +189,173 @@ var MainPage = React.createClass({
   }
 });
 
+function downloadSong(current, index) {
+    return new Promise((resolve, _) => {
+        ipc.send('download', current);
+        //_this.setState({'downloading':true});
+        //App.downloading=App.selected;
+        $("#progress_bar_"+index).fadeIn();
+        ipc.on("downloadProgress", function(event, arg){
+            var progress = arg*100;
+            $("#progress_label_"+index).html(parseInt(progress)+"%");
+            $("#progress_bar_"+index).attr("class", "c100 p"+(parseInt(progress)));
+        });
+        ipc.on("downloadFinished", function(event, arg){
+            $.get("songs/" + arg + "/" + arg + ".txt", function(data) {
+                var lyrics = window.Lyrics.parse(data);
+                lyrics["name"] = arg;
+                React.render(
+                        <Game song={lyrics}/>,
+                    document.getElementById('content')
+                );
+                resolve();
+            });
+        });
+    });
+}
+
+var loadingState = new function() {
+    var step = 0,
+        stepInterval = 400,
+        timerId = null,
+        requests = 0;
+
+    function advanceStep() {
+        step++;
+        if (step === 4)
+            step = 0;
+
+        var text = '';
+        var i = 0;
+        while (i++ < step)
+            text += '.';
+        $('#loading-placeholder').text(text);
+
+        // Undoes possible pop's
+        $('#loading-placeholder').css('font-weight', 'normal');
+    }
+
+    function show() {
+        if (requests === 0)
+            timerId = setInterval(advanceStep,
+                                  stepInterval);
+        requests++;
+    }
+
+    function hide() {
+        if (requests === 0) return;
+
+        requests--;
+        if (requests === 0) {
+            clearInterval(timerId);
+            step = 0;
+            timerId = null;
+            $('#loading-placeholder').text('');
+        }
+    }
+
+    function pop() {
+        $('#loading-placeholder').css('font-weight', 'bold');
+    }
+
+    this.show = show;
+    this.hide = hide;
+    this.pop = pop;
+}();
+
+function showSearchForm() {
+    $("#lookup_string").hide();
+    $("#search_form").show();
+    $("#search_input").focus();
+}
+
+function hideSearchForm() {
+    $('#lookup_string').text($('#search_input').val());
+    $('#search_form').hide();
+    $('#lookup_string').show();
+}
 
 module.exports = React.createClass({
-  getInitialState () {
-	  var _this = this;
-	  var Game = require('./game.js');
-	  $( document ).keydown(function(e) {
-	  	if(e.which == 27){
-		  	document.location.href='index.html';
-	  	} 
-	  	});
+    getInitialState () {
+        var _this = this;
+        var Game = require('./game.js');
 
-	  $( document ).keypress(function(e) {
-			if(e.which != 13 && !$("#search_form").is(":visible")) {
-				 	$("#lookup_string").hide();
-				 	$("#search_form").show();
-				 	$("#search_input").focus();
-			}
-			if(e.which == 13 && !$("#search_form").is(":visible")){
-			//	 	current = App.searchResults.length==0?App.finalSongs[App.selected]:App.searchResults[App.selected];
-					var current = _this.refs.main.refs.slider.refs.slider_info.state.item;
-					var index = _this.refs.main.refs.slider.refs.slider_info.state.index;
-					
-				 	if(current.remote!=undefined){
-					 	if(_this.state.downloading==false){
-						 	ipc.send('download', current);	
-						 	_this.state.downloading=true;
-						 	//_this.setState({'downloading':true});
-						 	//App.downloading=App.selected;	
-						 	$("#progress_bar_"+index).fadeIn();
-						 	ipc.on("downloadProgress", function(event, arg){
-								var progress = arg*100;
-								$("#progress_label_"+index).html(parseInt(progress)+"%");
-								$("#progress_bar_"+index).attr("class", "c100 p"+(parseInt(progress)));
-								
-							});
-							ipc.on("downloadFinished", function(event, arg){
-								$.get("songs/"+arg+"/"+arg+".txt", function(data) {
-							    	var lyrics = window.Lyrics.parse(data);
-									lyrics["name"]=arg;	
-								React.render(
-									<Game song={lyrics}/>,
-									document.getElementById('content')
-									);	
-									});
-						  	});
-					 	}	
-				 	}else{
-						React.render(
-					    <Game song={current}/>,
-					    document.getElementById('content')
-					  );	
-					} 
-					
-				
-				 }else{
-					 if(e.which == 13 && $("#search_form").is(":visible")){
-						$("#lookup_string").html($("#search_input").val());
-						$("#search_form").hide();
-						$("#lookup_string").show();
-						ipc.send('search', $("#search_input").val());	
-						ipc.on("results", function(event, arg){
-							$('.slider').slick('unslick');						
-							_this.refs.main.refs.slider.setState({items:arg, selected:0})
-			
-						});			
-						e.preventDefault();
-					 }
-					 
-				 }
+        $( document ).keydown(function(e) {
+            if(e.which == 27){
+                document.location.href='index.html';
+            }
+            else if((e.which == 37 || e.which == 39) &&
+                    $('.slider').is(':visible') &&
+                    !$('#search_form').is(':visible')) {
 
-			});
-			return {downloading:false, index:0};
-	  
-  },
+                // Left and right arrow keys
+                if (e.which == 37)
+                    $('.slider').slick('slickPrev');
+                else
+                    $('.slider').slick('slickNext');
+            }
+        });
 
-  render () {
-    return (
-	    <div>
-	    <NavBar />
-	    <MainPage ref='main' />
-	    
-	    </div>
+        $(document).ready(() => {
+            $('#search_form').focusout(hideSearchForm);
+        });
 
-    )
-  }
+        $(document).keypress(function(e) {
+            var pressedReturn = e.which == 13;
+            if(!pressedReturn && !$("#search_form").is(":visible")) {
+                showSearchForm();
+            }
+            if(pressedReturn && !$("#search_form").is(":visible")){
+                // current = App.searchResults.length==0?App.finalSongs[App.selected]:App.searchResults[App.selected];
+                var current = _this.refs.main.refs.slider.refs.slider_info.state.item;
+                var index = _this.refs.main.refs.slider.refs.slider_info.state.index;
+
+                if(current.remote != undefined){
+                    if(_this.state.downloading == false){
+                        _this.state.downloading = true;
+                        loadingState.show();
+                        downloadSong(current, index).then(() => {
+                            _this.state.downloading = false;
+                            loadingState.hide();
+                        });
+                    }
+                    else {
+                        console.debug('Tried to download while previous download was unfinished.');
+                        loadingState.pop();
+                    }
+                }
+                else {
+                    React.render(
+                            <Game song={current}/>,
+                        document.getElementById('content')
+                    );
+                }
+            }
+            else {
+                if(pressedReturn && $("#search_form").is(":visible")){
+                    hideSearchForm();
+                    loadingState.show();
+                    ipc.send('search', $("#search_input").val());
+                    ipc.on("results", function(event, arg){
+                        $('.slider').slick('unslick');
+                        _this.refs.main.refs.slider.setState({items:arg, selected:0});
+                        loadingState.hide();
+                    });
+                    e.preventDefault();
+                }
+            }
+
+        });
+        return {downloading: false, index: 0};
+    },
+
+    render () {
+        return (
+	            <div>
+	            <NavBar />
+	            <MainPage ref='main' />
+	            </div>
+
+        )
+    }
 })
