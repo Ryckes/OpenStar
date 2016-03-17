@@ -67,6 +67,20 @@ gulp.task('build-client-css', (done) => {
   })
 })
 
+gulp.task('build-client-fonts', (done) => {
+  glob('./app/fonts/*', (err, files) => {
+    if (err) done(err)
+
+    let tasks = files.map((entry) => {
+    return gulp.src(entry)
+        .pipe(rename({
+          dirname: 'fonts'
+      })).pipe(gulp.dest('./build'))
+	  })
+
+    es.merge(tasks).on('end', done)
+  })
+})
 gulp.task('build-client-scss', (done) => {
   glob('./app/scss/*.scss', (err, files) => {
     if (err) done(err)
@@ -128,9 +142,9 @@ gulp.task('build-client-assets', (done) => {
   })
 })
 
-gulp.task('build-client', ['build-client-bundles', 'build-client-css', 'build-client-scss', 'build-client-html', 'build-client-assets'])
+gulp.task('build-client', ['build-client-bundles', 'build-client-fonts', 'build-client-css', 'build-client-scss', 'build-client-html', 'build-client-assets'])
 
-gulp.task('build-client-production', ['build-client-bundles', 'build-client-css', 'build-client-scss', 'build-client-html-production', 'build-client-assets'])
+gulp.task('build-client-production', ['build-client-bundles', 'build-client-fonts', 'build-client-css', 'build-client-scss', 'build-client-html-production', 'build-client-assets'])
 
 gulp.task('build-server', (done) => {
   glob('./src/*.js', (err, files) => {

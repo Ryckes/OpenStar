@@ -126,6 +126,7 @@ var Game = {
 			var duration = lyric["duration"];
 			var division = 100 * duration / total;
 			var note = Pitch.noteStrings[lyric["pitch"] % 12];
+			console.log(lyric["pitch"]);
 			var top_ = Pitch.noteStrings.indexOf(note) * 20;
 
 			$("#pitches").append("<div class='bubble' id='bubble" + lyric["id"] + "' style='margin-top:" + top_ + "px;width:" + division + "%;'></div>");
@@ -242,10 +243,10 @@ var Game = {
 		//this.videoElement.src = this.lyricsPath + "/" + this.lyrics["name"] + "/" + vid;
 		//this.callPlayer("playVideo");
 		var _this= this;
-		$("iframe").attr("src", "http://fiddle.jshell.net/jyL58uoL/28/show/light/#"+this.lyrics["youtube"]);
+		$("iframe").attr("src", "http://garcianieto.me/openstar/player.html#"+this.lyrics["youtube"]);
 		$('iframe').load(function(){
 		 window.addEventListener("message", _this.getMessage, false);
-		 document.getElementsByTagName('iframe')[0].contentWindow.postMessage("handshake", "http://fiddle.jshell.net");
+		 document.getElementsByTagName('iframe')[0].contentWindow.postMessage("handshake", "http://garcianieto.me");
 
 		});
 	     /*

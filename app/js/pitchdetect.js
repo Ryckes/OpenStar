@@ -25,7 +25,7 @@ SOFTWARE.
 var Pitch = {
 	p1:null,
 	p2:null,
-
+	lastNotes1:[],
 	note:null,
 	audioContext:null,
 	isPlaying:false,
@@ -43,7 +43,41 @@ var Pitch = {
 	noteElem:null,
 	detuneElem:null,
 	detuneAmount:null,
-	
+	mostRepeated:function(array)
+	{
+	    if(array.length == 0)
+	    	return null;
+	    var modeMap = {};
+	    var maxEl = array[0], maxCount = 1;
+	    for(var i = 0; i < array.length; i++)
+	    {
+	    	var el = array[i];
+	    	if(modeMap[el] == null)
+	    		modeMap[el] = 1;
+	    	else
+	    		modeMap[el]++;	
+	    	if(modeMap[el] > maxCount)
+	    	{
+	    		maxEl = el;
+	    		maxCount = modeMap[el];
+	    	}
+	    }
+	    return maxEl;
+	},
+	pushNewNote1:function(n){
+		while(this.lastNotes1.length>10){
+			this.lastNotes1.shift();
+		}
+		this.lastNotes1.push(n);
+		
+	},
+	pushNewNote2:function(n){
+		while(this.lastNotes2.length>25){
+			this.lastNotes2.shift();
+		}
+		this.lastNotes2.push(n);
+		
+	},
 	init:function() {
 		this.audioContext = new  window.AudioContext();
 		var MAX_SIZE = Math.max(4,Math.floor(this.audioContext.sampleRate/5000));	// corresponds to a 5kHz signal
@@ -73,7 +107,7 @@ var Pitch = {
 	    var deviceInfo = deviceInfos[i];
 	    if (deviceInfo.kind === 'audioinput') {
 	      	var text = deviceInfo.label ||  'microphone ' + i;
-	       $("#audioinput").append($("<option>", { value: deviceInfo.deviceId }).text(text));
+	       $("#micro_sel").append($("<option>", { value: deviceInfo.deviceId }).text(text));
 	
 	    } 
 	  }
@@ -109,7 +143,7 @@ var Pitch = {
 	    
 	   
 	    //To hear microphones:
-	    t.mediaStreamSource.connect(t.audioContext.destination);
+	  //  t.mediaStreamSource.connect(t.audioContext.destination);
 	    
 		splitter.connect(t.analyser,0,0);
 		splitter.connect(t.analyser2,1,0);
@@ -120,6 +154,20 @@ var Pitch = {
 	   // splitter.connect(audioContext.destination, 0);
 	    t.getPitches();
 	},
+	getAverageVolume:function(array) {
+        var values = 0;
+        var average;
+ 
+        var length = array.length;
+ 
+        // get all the frequency amplitudes
+        for (var i = 0; i < length; i++) {
+            values += array[i];
+        }
+ 
+        average = values / length;
+        return average;
+    },
 		
 	toggleLiveInput:function() {
 	    if (this.isPlaying) {
@@ -156,7 +204,7 @@ var Pitch = {
 	buf:new Float32Array( 1024 ),
 	buf2:new Float32Array( 2014 ),
 	
-	noteStrings: ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"],
+	noteStrings: ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "B", "H"],
 	
 	noteFromPitch:function( frequency ) {
 		var noteNum = 12 * (Math.log( frequency / 440 )/Math.log(2) );
@@ -171,7 +219,7 @@ var Pitch = {
 		return Math.floor( 1200 * Math.log( frequency / frequencyFromNoteNumber( note ))/Math.log(2) );
 	},
 		
-	MIN_SAMPLES:0,  // will be initialized when AudioContext is created.
+	MIN_SAMPLES:100,  // will be initialized when AudioContext is created.
 	
 	autoCorrelate:function( buf, sampleRate ) {
 		var SIZE = buf.length;
@@ -243,15 +291,21 @@ var Pitch = {
 		var ac = this.autoCorrelate( this.buf, this.audioContext.sampleRate );
 		var ac2 = this.autoCorrelate( this.buf2, this.audioContext.sampleRate );
 	
+		var array =  new Uint8Array(this.analyser.frequencyBinCount);
+        this.analyser.getByteFrequencyData(array);
+        var average = this.getAverageVolume(array);
+        average = average>100?100:average;
+		$(".soundFill").css("width", average+"%");
 		// TODO: Paint confidence meter on canvasElem here.
 	
 	
 	 	if (ac == -1) {	} else {
 		 	var pitch = ac;	 	
 		 	var note =  this.noteFromPitch( pitch );
-	
-			this.noteElem = this.noteStrings[note%12];
+			this.pushNewNote1(this.noteStrings[note%12]);
+			this.noteElem = this.mostRepeated(this.lastNotes1);
 			this.p1 = this.noteElem;
+			$(".pitchSample").html(this.p1);
 		//	document.getElementById('p1').innerHTML=noteElem;
 			}
 	

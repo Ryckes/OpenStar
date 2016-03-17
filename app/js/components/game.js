@@ -29,7 +29,7 @@ module.exports = React.createClass({
 				<div id="lyrics"></div>
 			</div>
 			<div id="player">
-			 <iframe frameborder="0" title="YouTube video player" type="text/html" src="http://fiddle.jshell.net/jyL58uoL/28/show/light/#e-ORhEE9VVg"></iframe>
+			 <iframe frameborder="0" title="YouTube video player" type="text/html" src="http://garcianieto.me/openstar/player.html"></iframe>
 </div>
 			<video id="video" muted>
 				<source type="video/mp4"/>

@@ -1,30 +1,5 @@
+var NavBar = require('./navbar.js');
 
-var NavBar = React.createClass({
-  render: function() {
-    return (
-	<div className='navbar navbar-default navbar-fixed-top'>
-		<div className='container'>
-			<div className='navbar-header'>
-				<a href='#' className='navbar-brand'>OpenStar<span id="loading-placeholder"></span></a>
-			    <div className='navbar-brand navbar-brand-centered'>
-					<span id='lookup_string'>Todas mis canciones</span>
-					<form id='search_form' className='navbar-form' role='search'>
-						<div className='input'>
-							<input id='search_input' type='text' className='form-control pull-right' placeholder='Search'/>
-						</div>
-					</form>
-				</div>
-			</div>
-			<div className='navbar-collapse collapse' id='navbar-main'>
-				<ul className='nav navbar-nav navbar-right'>
-						
-				</ul>
-			</div>
-		</div>
-	</div>
-    );
-  }
-});
 var SliderInfo = React.createClass({
 	getInitialState () {
 	return {item:""};		
@@ -279,7 +254,7 @@ module.exports = React.createClass({
     getInitialState () {
         var _this = this;
         var Game = require('./game.js');
-
+        
         $( document ).keydown(function(e) {
             if(e.which == 27){
                 document.location.href='index.html';
@@ -348,7 +323,6 @@ module.exports = React.createClass({
         });
         return {downloading: false, index: 0};
     },
-
     render () {
         return (
 	            <div>

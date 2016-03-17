@@ -15,6 +15,7 @@ var Lyrics = {
 				if(tagName in attributes){
 					tagValue = attributes[tagName]=="float"?parseFloat(tagValue):tagValue;
 					tagValue = attributes[tagName]=="int"?parseInt(tagValue):tagValue;
+					tagValue = tagName=="videogap" && tagValue<0?0:tagValue;
 					//tagValue = attributes[tagName]=="str"?tagValue.slice(0, -1):tagValue;
 					finalStruc[tagName]=tagValue;
 				}
@@ -23,7 +24,9 @@ var Lyrics = {
 					raw = raw.split(" ");
 					var result = raw.slice(0,4);
 					result.push(raw.slice(4).join(' '));
-					var lyric = {"id":parseInt(li),"type":types[result[0]], "beat":parseInt(result[1]), "duration":parseInt(result[2]), "pitch":parseInt(result[3]), "text":unescape(result[4])}
+					var pitch = parseInt(result[3]);
+					pitch = pitch<0?12-(pitch*-1):pitch;
+					var lyric = {"id":parseInt(li),"type":types[result[0]], "beat":parseInt(result[1]), "duration":parseInt(result[2]), "pitch":pitch, "text":unescape(result[4])}
 					finalStruc["lyrics"].push(lyric);
 				}
 			}
